@@ -203,26 +203,24 @@ def generate_random_maze(rows, cols):
 
         # Initialize
         visited = set()
-        queue = [(start_x, start_y, 0)]  
         furthest = (start_x, start_y, 0)  
+        
+        def dfs(x, y, dist):
+            nonlocal furthest
+            # Mark visited node
+            visited.add((x,y))
 
-        while queue:
-            # Get the next cell
-            x, y, dist = queue.pop(0) 
-
-            # Update the furthest point if this one is farther
+            # Update the furthest point 
             if dist > furthest[2]:
                 furthest = (x, y, dist)
 
-            # Check all possible moves
             for dx, dy in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
-                nx = x + dx
-                ny = y + dy
+                nx = dx + x
+                ny = dy + y
+                if 1 <= nx < rows and 1 <= ny < cols and maze[ny][nx] == ' ' and (nx,ny) not in visited:
+                    dfs(nx,ny, dist + 1)
 
-                # Validate the move
-                if 1 <= nx < cols and 1 <= ny < rows and maze[ny][nx] == " " and (nx, ny) not in visited:
-                    visited.add((nx, ny))                 
-                    queue.append((nx, ny, dist + 1))      
+        dfs(start_x, start_y, 0)
 
         return furthest 
 
@@ -347,7 +345,7 @@ hud_pen.color("white")
 def show_hud():
     hud_pen.goto(-300, 300)
     hud_pen.clear()
-    hud_pen.write(f"Gold: {player.gold} | Treasures Left: {len(treasures)}", align="left", font=("Arial", 14, "bold"))
+    hud_pen.write(f"Gold: {player.gold} | Cookies Left: {len(treasures)}", align="left", font=("Arial", 14, "bold"))
 
 # After gameplay
 def game_over():
