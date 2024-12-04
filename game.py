@@ -2,16 +2,23 @@ import turtle
 import math
 import random
 import time
+# import pygame
+
+# # Add music for the game
+# pygame.mixer.init()
+# pygame.mixer.music.load("background.mp3")
+# pygame.mixer.music.set_volume(0.5)
+# pygame.mixer.music.play(-1)
 
 # Create the UI for the game
 wn = turtle.Screen()
 wn.bgcolor("black")
-wn.title("A maze game")
+wn.title("The Maze")
 wn.setup(700, 700)
 wn.tracer(0)
 
 # Register shapes
-images = ['wall2.gif', 'cookie.gif', 'enemy.gif', 'char.gif']
+images = ['wall2.gif', 'cookie.gif', 'enemy.gif', 'char.gif', 'door.gif']
 for image in images:
     wn.addshape(image)
 # Create Pen
@@ -77,7 +84,21 @@ class Treasure(turtle.Turtle):
     def destroy(self):
         self.goto(2000, 2000)
         self.hideturtle()
-        
+
+# Class Door
+class Door(turtle.Turtle):
+    def __init__(self, x, y):
+        turtle.Turtle.__init__(self)
+        self.shape("door.gif")
+        self.color("green")
+        self.penup()
+        self.speed(0)
+        self.goto(x,y)    
+
+    def destroy(self):
+        self.goto(2000, 2000)
+        self.hideturtle()    
+
 # Create Enemy
 class Enemy(turtle.Turtle):
     def __init__(self, x, y):
@@ -139,7 +160,7 @@ class Enemy(turtle.Turtle):
         b = self.ycor() - other.ycor()
         distance = math.sqrt((a**2) + (b**2))
 
-        if distance < 75:
+        if distance < 35:
             return True
         else:
             return False
@@ -148,50 +169,104 @@ pen = Pen()
 player = Player()
 
 
-# Create wall barrier list
-walls = []
+
+
+# generate maze
+def generate_random_maze(rows, cols):
+    # Initial maze with all walls
+    maze = [['X' for i in range(cols)] for i in range(rows)]
+
+    # Backtracking to create path
+    def carve_walls(x, y):
+        direction = [(0, -2), (2, 0), (0, 2), (-2, 0)]
+        random.shuffle(direction)
+
+        for dx, dy in direction:
+            nx = x + dx
+            ny = y + dy
+            if 1 <= nx < rows and 1 <= ny < cols and maze[ny][nx] == 'X':
+                maze[y + dy//2][x + dx//2] = ' '
+                maze[ny][nx] = ' '
+                carve_walls(nx, ny)
+
+    # Start carving from a random point
+    start_x = random.randrange(1, cols, 2)
+    start_y = random.randrange(1, rows, 2)
+    maze[start_y][start_x] = " " 
+    carve_walls(start_x, start_y)
+
+    # Add player at the start position
+    maze[start_y][start_x] = "P"
+
+    # Perform BFS to find the furthest point
+    def bfs_furthest_point(start_x, start_y):
+
+        # Initialize
+        visited = set()
+        queue = [(start_x, start_y, 0)]  
+        furthest = (start_x, start_y, 0)  
+
+        while queue:
+            # Get the next cell
+            x, y, dist = queue.pop(0) 
+
+            # Update the furthest point if this one is farther
+            if dist > furthest[2]:
+                furthest = (x, y, dist)
+
+            # Check all possible moves
+            for dx, dy in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
+                nx = x + dx
+                ny = y + dy
+
+                # Validate the move
+                if 1 <= nx < cols and 1 <= ny < rows and maze[ny][nx] == " " and (nx, ny) not in visited:
+                    visited.add((nx, ny))                 
+                    queue.append((nx, ny, dist + 1))      
+
+        return furthest 
+
+    # Get furthest point and place the door
+    fx, fy, _ = bfs_furthest_point(start_x, start_y)
+    maze[fy][fx] = "D" 
+
+    # Add random treasures
+    for i in range(random.randint(1, 5)):
+        tx, ty = random.randrange(1, cols, 2), random.randrange(1, rows, 2)
+        if maze[ty][tx] == " ":
+            maze[ty][tx] = "T"
+
+    # Add random enemies
+    for i in range(random.randint(1, 3)):
+        ex, ey = random.randrange(1, cols, 2), random.randrange(1, rows, 2)
+        if maze[ey][ex] == " ":
+            maze[ey][ex] = "E"
+
+    return maze
 
 # Create levels list
 levels = []
 
-# Define first level
-level_1 = [
-    "XXXXXXXXXXXXXXXXXXXXXXXXX",
-    "XP    X         X       X",
-    "X     X  XXXXX  X  XXX  X",
-    "X  XXXXX  X      X    X X",
-    "X  X      XXXXXX XXXX X X",
-    "X  X  XXXXXE    EX    X X",
-    "X  X  X          XXXXXX X",
-    "X  XXXX  XXXXXX        XX",
-    "X     X  X      XXXXXX  X",
-    "XXXXX   XXXXXXX         X",
-    "X       X     XXXXXXX   X",
-    "X   XXXXXXXXXXX      X  X",
-    "X      X              X X",
-    "XXXXX X  XXXXXXX  XXXXX X",
-    "X   X X      X          X",
-    "X X X XXXXX TXXXXXXXXXXXX",
-    "X X X      X X          X",
-    "X XXXXXXXXXX XXXXXXXXX  X",
-    "X          X      X     X",
-    "XXXXXXXXXX XXXXXX XXXXXXX",
-    "X           X           X",
-    "X XXXXXXXX  XXXXXXXXXX  X",
-    "X        X             XX",
-    "XXXXXXXXTXXXXXXXXXXXXXX X",
-    "XXXXXXXXXXXXXXXXXXXXXXXXX"
 
-]
+level_1 = generate_random_maze(25,25)
+
+# Create wall barrier list
+walls = []
 
 # Add treasure list
 treasures = []
 
+# Add door list
+doors = []
+
 # Add enemies list
 enemies = []
+
 # Add maze to mazes list
 levels.append(level_1)
 
+
+# pen_stamps = []
 # Set up the maze
 def setup_maze(level):
     for y in range(len(level)):
@@ -204,8 +279,11 @@ def setup_maze(level):
 
             # Check if it is a 'X' (representing the wall)
             if character == "X":
-                pen.goto(screen_x,screen_y)
+                pen.goto(screen_x, screen_y)
                 pen.stamp()
+                # stamp_id = pen.stamp()
+                # pen_stamps.append((stamp_id, screen_x, screen_y))
+
                 # Add barriers to wall list
                 walls.append((screen_x,screen_y))
             
@@ -216,6 +294,10 @@ def setup_maze(level):
             # Check if it is a 'T' (representing treasure)
             if character == 'T': 
                 treasures.append(Treasure(screen_x,screen_y))
+
+            # Check if it is a 'D' (representing Door)
+            if character == 'D':
+                doors.append(Door(screen_x, screen_y))
 
             # Check if it is a 'E' (representing enemies)
             if character == 'E':
@@ -238,14 +320,45 @@ setup_maze(levels[0])
 # Turn off screen updates
 wn.tracer(0)
 
+
+
+# Add a global timer variable
+start_time = time.time()
+time_limit = 120 # game durations in sec
+
+timer_pen = Pen()  # Create a new Pen for the timer
+timer_pen.penup()
+timer_pen.hideturtle()
+timer_pen.color("white")
+
+def showtime():
+    remain_time = max(0, time_limit - int(time.time() - start_time))
+    timer_pen.goto(-300, 320)
+    timer_pen.clear() # clear previous timer
+    timer_pen.write(f"Time left: {remain_time}s", align="left", font=("Arial", 14, "bold"))
+    return remain_time
+
+# Add HUD elements
+hud_pen = Pen()
+hud_pen.penup()
+hud_pen.hideturtle()
+hud_pen.color("white")
+
+def show_hud():
+    hud_pen.goto(-300, 300)
+    hud_pen.clear()
+    hud_pen.write(f"Gold: {player.gold} | Treasures Left: {len(treasures)}", align="left", font=("Arial", 14, "bold"))
+
+# After gameplay
 def game_over():
     # Display Game Over message and stop the game.
     pen.goto(0, 0)
     pen.color("red")
     pen.write("GAME OVER", align="center", font=("Arial", 36, "bold"))
     wn.update()
-    time.sleep(2)
+    time.sleep(3)
     turtle.bye()
+
 def won():
     # Display 'Winner' message and stop the game.
     pen.goto(0, 0)
@@ -255,10 +368,22 @@ def won():
     time.sleep(2)
     turtle.bye()
 
+
 # Main game
 try:
     while True:
         # Check for player collision with treasure
+ 
+        # Display timer
+        remain_time = showtime()
+        if remain_time <= 0:
+            game_over()
+
+        # Display HUD
+        show_hud()
+        # if time.time() - start_time > 60:
+        #     enemy_speed = 2
+
         for treasure in treasures:
             if player.is_collision(treasure):
                 # Add treasure gold to the player
@@ -269,8 +394,12 @@ try:
                 # Remove the treasure from the treasure list
                 treasures.remove(treasure)
         
+        for door in doors:
+            if player.is_collision(door) and not treasures:
+                doors.remove(door)
+
         # Check if all treasures are collected
-        if not treasures:
+        if not treasures and not doors:
             won()
 
         # Iterate through enemy list to see if the player collide
