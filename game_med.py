@@ -4,7 +4,7 @@ import random
 import time
 # import pygame
 
-# # Add music for the game
+# Add music for the game
 # pygame.mixer.init()
 # pygame.mixer.music.load("background.mp3")
 # pygame.mixer.music.set_volume(0.5)
@@ -18,7 +18,7 @@ wn.setup(700, 700)
 wn.tracer(0)
 
 # Register shapes
-images = ['wall2.gif', 'cookie.gif', 'enemy.gif', 'char.gif', 'door.gif']
+images = ['wall2.gif', 'cookie.gif', 'enemy.gif', 'char.gif', 'door.gif', 'foggy.gif']
 for image in images:
     wn.addshape(image)
 # Create Pen
@@ -164,10 +164,12 @@ class Enemy(turtle.Turtle):
             return True
         else:
             return False
+        
+
 # Create class instances
 pen = Pen()
 player = Player()
-
+# lighting = Lighting()
 
 
 
@@ -235,7 +237,7 @@ def generate_random_maze(rows, cols):
             maze[ty][tx] = "T"
 
     # Add random enemies
-    for i in range(random.randint(1, 3)):
+    for i in range(random.randint(1, 2)):
         ex, ey = random.randrange(1, cols, 2), random.randrange(1, rows, 2)
         if maze[ey][ex] == " ":
             maze[ey][ex] = "E"
@@ -246,7 +248,7 @@ def generate_random_maze(rows, cols):
 levels = []
 
 
-level_1 = generate_random_maze(25,25)
+level_2 = generate_random_maze(25,25)
 
 # Create wall barrier list
 walls = []
@@ -261,7 +263,7 @@ doors = []
 enemies = []
 
 # Add maze to mazes list
-levels.append(level_1)
+levels.append(level_2)
 
 
 # pen_stamps = []
@@ -304,7 +306,7 @@ def setup_maze(level):
                 # Start moving the enemy
                 enemy.move()
 
-
+ 
 # Keyboard binding
 turtle.listen()
 turtle.onkey(player.go_left, "Left")
@@ -322,7 +324,7 @@ wn.tracer(0)
 
 # Add a global timer variable
 start_time = time.time()
-time_limit = 120 # game durations in sec
+time_limit = 90 # game durations in sec
 
 timer_pen = Pen()  # Create a new Pen for the timer
 timer_pen.penup()
@@ -371,7 +373,7 @@ def won():
 try:
     while True:
         # Check for player collision with treasure
- 
+        # update_lighting()
         # Display timer
         remain_time = showtime()
         if remain_time <= 0:
