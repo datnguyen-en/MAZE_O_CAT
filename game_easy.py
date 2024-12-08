@@ -2,7 +2,7 @@ import turtle
 import math
 import random
 import time
-# import pygame
+import winsound
 
 # Add music for the game
 # pygame.mixer.init()
@@ -18,7 +18,7 @@ wn.setup(700, 700)
 wn.tracer(0)
 
 # Register shapes
-images = ['wall2.gif', 'cookie.gif', 'enemy.gif', 'char.gif', 'door.gif', 'foggy.gif']
+images = ['wall2.gif', 'cookie.gif', 'enemy.gif', 'char.gif', 'door.gif']
 for image in images:
     wn.addshape(image)
 # Create Pen
@@ -275,6 +275,7 @@ def show_hud():
 
 # After gameplay
 def game_over():
+    winsound.PlaySound("game_lose.wav", winsound.SND_ASYNC)
     # Display Game Over message and stop the game.
     pen.goto(0, 0)
     pen.color("red")
@@ -285,6 +286,7 @@ def game_over():
 
 def won():
     # Display 'Winner' message and stop the game.
+    winsound.PlaySound("game_win.wav", winsound.SND_ASYNC)
     pen.goto(0, 0)
     pen.color("green")
     pen.write("YOU WON", align="center", font=("Arial", 36, "bold"))
@@ -296,6 +298,7 @@ def won():
 # Main game
 try:
     while True:
+        winsound.PlaySound("game_on.wav", winsound.SND_ASYNC)
         # Check for player collision with treasure
         # update_lighting()
         # Display timer
@@ -310,6 +313,9 @@ try:
 
         for treasure in treasures:
             if player.is_collision(treasure):
+                winsound.PlaySound("get_gold.wav", winsound.SND_ASYNC)
+                time.sleep(0.03)
+                winsound.PlaySound("game_on.wav", winsound.SND_ASYNC)
                 # Add treasure gold to the player
                 player.gold += treasure.gold
                 print(f"Player gold: {player.gold}")
