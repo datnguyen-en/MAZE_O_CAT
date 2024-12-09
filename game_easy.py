@@ -296,45 +296,47 @@ def won():
 
 
 # Main game
-try:
-    while True:
-        winsound.PlaySound("game_on.wav", winsound.SND_ASYNC)
-        # Check for player collision with treasure
-        # update_lighting()
-        # Display timer
-        remain_time = showtime()
-        if remain_time <= 0:
-            game_over()
+def main_game():
+    winsound.PlaySound("game_on.wav", winsound.SND_ASYNC)
+    try:
+        while True:
+            # Display timer
+            remain_time = showtime()
+            if remain_time <= 0:
+                game_over()
 
-        # Display HUD
-        show_hud()
-        # if time.time() - start_time > 60:
-        #     enemy_speed = 2
+            # Display HUD
+            show_hud()
+            # if time.time() - start_time > 60:
+            #     enemy_speed = 2
 
-        for treasure in treasures:
-            if player.is_collision(treasure):
-                winsound.PlaySound("get_gold.wav", winsound.SND_ASYNC)
-                time.sleep(0.03)
-                winsound.PlaySound("game_on.wav", winsound.SND_ASYNC)
-                # Add treasure gold to the player
-                player.gold += treasure.gold
-                print(f"Player gold: {player.gold}")
-                # Destroy the treasure
-                treasure.destroy()
-                # Remove the treasure from the treasure list
-                treasures.remove(treasure)
-        
-        for door in doors:
-            if player.is_collision(door) and not treasures:
-                doors.remove(door)
+            for treasure in treasures:
+                if player.is_collision(treasure):
+                    winsound.PlaySound("get_gold.wav", winsound.SND_ASYNC)
+                    time.sleep(1)
+                    # Add treasure gold to the player
+                    winsound.PlaySound("game_on.wav", winsound.SND_ASYNC)
+                    player.gold += treasure.gold
+                    print(f"Player gold: {player.gold}")
+                    # Destroy the treasure
+                    treasure.destroy()
+                    # Remove the treasure from the treasure list
+                    treasures.remove(treasure)
+            
+            for door in doors:
+                if player.is_collision(door) and not treasures:
+                    doors.remove(door)
 
-        # Check if all treasures are collected
-        if not treasures and not doors:
-            won()
-        # Update screen and add delay
+            # Check if all treasures are collected
+            if not treasures and not doors:
+                won()
+            # Update screen and add delay
 
-        wn.update()
-        # time.sleep(0.05)
+            wn.update()
+            # time.sleep(0.05)
 
-except turtle.Terminator:
-    print("Game exited!")
+    except turtle.Terminator:
+        print("Game exited!")
+
+
+main_game()
