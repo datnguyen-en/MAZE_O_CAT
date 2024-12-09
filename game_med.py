@@ -2,7 +2,7 @@ import turtle
 import math
 import random
 import time
-# import pygame
+import winsound
 
 # Add music for the game
 # pygame.mixer.init()
@@ -101,17 +101,19 @@ class Door(turtle.Turtle):
 
 # Create Enemy
 class Enemy(turtle.Turtle):
-    def __init__(self, x, y):
+    def __init__(self, x, y, player, treasures):
         turtle.Turtle.__init__(self)
         self.shape("enemy.gif")
         self.color("red")
         self.penup()
         self.speed(0)
-        self.goto(x,y)
+        self.goto(x, y)
+        self.player = player
+        self.treasures = treasures
         self.direction = random.choice(["up", "down", "left", "right"])
 
-    # How enemy move
     def move(self):
+        # Default movement direction (up, down, left, right)
         if self.direction == "up":
             dx = 0
             dy = 24
@@ -124,46 +126,57 @@ class Enemy(turtle.Turtle):
         elif self.direction == "right":
             dx = 24
             dy = 0
-        else:
-            dx = 0
-            dy = 0
 
-        # Calculate the spot to move to
+        # If close to the player, chase the player
+        def some():
+            if self.is_close(self.player):
+                if self.player.xcor() < self.xcor():
+                    self.direction = "left"
+                elif self.player.xcor() > self.xcor():
+                    self.direction = "right"
+                elif self.player.ycor() < self.ycor():
+                    self.direction = "down"
+                else:
+                    self.direction = "up"
+            # If there are treasures, move towards the nearest one
+            elif self.treasures:  
+                nearest_treasure = min(self.treasures, key=lambda treasure: self.distance(treasure))
+                if nearest_treasure.xcor() < self.xcor():
+                    self.direction = "left"
+                elif nearest_treasure.xcor() > self.xcor():
+                    self.direction = "right"
+                elif nearest_treasure.ycor() < self.ycor():
+                    self.direction = "down"
+                else:
+                    self.direction = "up"
+        some()
+        # Move to the next position in the chosen direction
         move_to_x = self.xcor() + dx
         move_to_y = self.ycor() + dy
 
-        # Check if the player is close 
-        # If so, go in that direction
-        if self.is_close(player):
-            if player.xcor() < self.xcor():
-                self.direction = "left"
-            elif player.xcor() > self.xcor():
-                self.direction = "right"
-            elif player.ycor() < self.ycor():
-                self.direction = "down"
-            else:
-                self.direction = "up"
-                
-        # Check if the space has a wall
-        if (move_to_x, move_to_y) not in walls:
+        # Avoid walls (this assumes that walls are defined somewhere)
+        if not self.is_collision_with_walls(move_to_x, move_to_y):
             self.goto(move_to_x, move_to_y)
-
         else:
-            # choose a different direction if seeing the wall
+            some()
             self.direction = random.choice(["up", "down", "left", "right"])
         
-        # Set timer to move again
-        turtle.ontimer(self.move, t = random.randint(100, 300))
-    
+        # Continue moving after a short delay
+        turtle.ontimer(self.move, t=200)
+
     def is_close(self, other):
+        # Calculate distance between the enemy and the player
         a = self.xcor() - other.xcor()
         b = self.ycor() - other.ycor()
-        distance = math.sqrt((a**2) + (b**2))
+        distance = math.sqrt(a**2 + b**2)
+        return distance < 1000 # Consider proximity within 24 pixels
 
-        if distance < 35:
-            return True
-        else:
-            return False
+    def is_collision_with_walls(self, x, y):
+        # Check if the next position collides with a wall
+        for wall in walls:  # Assumes `walls` is a global list of wall coordinates
+            if (x, y) == wall:
+                return True
+        return False
         
 
 # Create class instances
@@ -231,7 +244,7 @@ def generate_random_maze(rows, cols):
     maze[fy][fx] = "D" 
 
     # Add random treasures
-    for i in range(random.randint(1, 5)):
+    for i in range(random.randint(1, 4)):
         tx, ty = random.randrange(1, cols, 2), random.randrange(1, rows, 2)
         if maze[ty][tx] == " ":
             maze[ty][tx] = "T"
@@ -301,7 +314,7 @@ def setup_maze(level):
 
             # Check if it is a 'E' (representing enemies)
             if character == 'E':
-                enemy = Enemy(screen_x, screen_y)
+                enemy = Enemy(screen_x, screen_y,player, treasures)
                 enemies.append(enemy)
                 # Start moving the enemy
                 enemy.move()
@@ -351,6 +364,7 @@ def show_hud():
 
 # After gameplay
 def game_over():
+    winsound.PlaySound("game_lose.wav", winsound.SND_ASYNC)
     # Display Game Over message and stop the game.
     pen.goto(0, 0)
     pen.color("red")
@@ -361,6 +375,7 @@ def game_over():
 
 def won():
     # Display 'Winner' message and stop the game.
+    winsound.PlaySound("game_win.wav", winsound.SND_ASYNC)
     pen.goto(0, 0)
     pen.color("green")
     pen.write("YOU WON", align="center", font=("Arial", 36, "bold"))
@@ -370,47 +385,56 @@ def won():
 
 
 # Main game
-try:
-    while True:
-        # Check for player collision with treasure
-        # update_lighting()
-        # Display timer
-        remain_time = showtime()
-        if remain_time <= 0:
-            game_over()
-
-        # Display HUD
-        show_hud()
-        # if time.time() - start_time > 60:
-        #     enemy_speed = 2
-
-        for treasure in treasures:
-            if player.is_collision(treasure):
-                # Add treasure gold to the player
-                player.gold += treasure.gold
-                print(f"Player gold: {player.gold}")
-                # Destroy the treasure
-                treasure.destroy()
-                # Remove the treasure from the treasure list
-                treasures.remove(treasure)
+def main_game():
         
-        for door in doors:
-            if player.is_collision(door) and not treasures:
-                doors.remove(door)
-
-        # Check if all treasures are collected
-        if not treasures and not doors:
-            won()
-
-        # Iterate through enemy list to see if the player collide
-        for enemy in enemies:
-            if player.is_collision(enemy):
-                print("You're dead!")
+    winsound.PlaySound("game_on.wav", winsound.SND_ASYNC)
+    try:
+        while True:
+            
+            # Check for player collision with treasure
+            # update_lighting()
+            # Display timer
+            remain_time = showtime()
+            if remain_time <= 0:
                 game_over()
 
-        # Update screen and add delay
-        wn.update()
-        # time.sleep(0.05)
+            # Display HUD
+            show_hud()
+            # if time.time() - start_time > 60:
+            #     enemy_speed = 2
 
-except turtle.Terminator:
-    print("Game exited!")
+            for treasure in treasures:
+                if player.is_collision(treasure):
+                    # Add treasure gold to the player
+                    winsound.PlaySound("get_gold.wav", winsound.SND_ASYNC)
+                    time.sleep(1)
+                    winsound.PlaySound("game_on.wav", winsound.SND_ASYNC)
+                    player.gold += treasure.gold
+                    print(f"Player gold: {player.gold}")
+                    # Destroy the treasure
+                    treasure.destroy()
+                    # Remove the treasure from the treasure list
+                    treasures.remove(treasure)
+            
+            for door in doors:
+                if player.is_collision(door) and not treasures:
+                    doors.remove(door)
+
+            # Check if all treasures are collected
+            if not treasures and not doors:
+                won()
+
+            # Iterate through enemy list to see if the player collide
+            for enemy in enemies:
+                if player.is_collision(enemy):
+                    print("You're dead!")
+                    game_over()
+
+            # Update screen and add delay
+            wn.update()
+            # time.sleep(0.05)
+
+    except turtle.Terminator:
+        print("Game exited!")
+
+main_game()
