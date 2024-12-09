@@ -103,25 +103,26 @@ def show_levels_screen(x, y):
 
     draw_button("Easy", -200, 100)
     draw_button("Medium", -200, 30)
-    draw_button("Hard", -200, -40)
+    draw_button("Cooper", -200, -40)
 
     # Wait for a click to start the game based on level selection
     screen.onscreenclick(start_game)
 
-# Function to start the game based on level
+buttons = [
+    {"label": "Easy", "x": -200, "y": 100, "width": 100, "height": 40, "level": "game_easy"},
+    {"label": "Medium", "x": -200, "y": 30, "width": 100, "height": 40, "level": "game_med"},
+    {"label": "Cooper", "x": -200, "y": -40, "width": 100, "height": 40, "level": "game_hard"},
+]
+
 def start_game(x, y):
+    print(f"Clicked at: {x}, {y}")  # Debugging click coordinates
     clear_screen()
-    winsound.PlaySound('button_press.wav', winsound.SND_ASYNC)
-    time.sleep(0.5)
-    winsound.PlaySound('loading.wav', winsound.SND_ASYNC)
-    if -200 <= x <= -100 and 80 <= y <= 120:  # Easy level
-        run_level("game_easy")
-    elif -200 <= x <= -100 and 10 <= y <= 50:  # Medium level
-        run_level("game_med")
-    elif -200 <= x <= -100 and -60 <= y <= -20:  # Hard level
-        run_level("game_hard")
-    else:
-        pass
+    for button in buttons:
+        bx, by, bw, bh = button["x"], button["y"], button["width"], button["height"]
+        if bx <= x <= bx + bw and by - bh <= y <= by:
+            run_level(button["level"])
+            return
+    print("No valid button clicked")
 
 
 # Function to dynamically load and start the maze game based on the level
