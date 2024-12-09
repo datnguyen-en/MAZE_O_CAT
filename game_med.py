@@ -250,7 +250,7 @@ def generate_random_maze(rows, cols):
             maze[ty][tx] = "T"
 
     # Add random enemies
-    for i in range(random.randint(1, 2)):
+    for i in range(2):
         ex, ey = random.randrange(1, cols, 2), random.randrange(1, rows, 2)
         if maze[ey][ex] == " ":
             maze[ey][ex] = "E"
