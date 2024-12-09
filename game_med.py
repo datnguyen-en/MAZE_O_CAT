@@ -1,435 +1,142 @@
 import turtle
-import math
-import random
-import time
 import winsound
+import time
+import importlib
 
-# Add music for the game
-# pygame.mixer.init()
-# pygame.mixer.music.load("background.mp3")
-# pygame.mixer.music.set_volume(0.5)
-# pygame.mixer.music.play(-1)
+# Set up the screen
+screen = turtle.Screen()
+screen.bgcolor("black")
+screen.setup(width=700, height=700)
 
-# Create the UI for the game
-wn = turtle.Screen()
-wn.bgcolor("black")
-wn.title("The Maze")
-wn.setup(700, 700)
-wn.tracer(0)
+# Add shapes
+screen.addshape('cat2.gif')
+screen.addshape('grass.gif')
+screen.addshape('cat.gif')
+screen.addshape('cookie.gif')
 
-# Register shapes
-images = ['wall2.gif', 'cookie.gif', 'enemy.gif', 'char.gif', 'door.gif']
-for image in images:
-    wn.addshape(image)
-# Create Pen
-class Pen(turtle.Turtle):
-    def __init__(self):
-        turtle.Turtle.__init__(self)    
-        self.shape("wall2.gif")
-        self.color("white")
-        self.penup()
-        self.speed(0)
+kitty = turtle.Turtle()
+grass = turtle.Turtle()
+cat = turtle.Turtle()
+cookie = turtle.Turtle()
 
-# Create player class
-class Player(turtle.Turtle):
-    def __init__(self):
-        turtle.Turtle.__init__(self)
-        self.shape("char.gif")
-        self.color("blue")
-        self.penup()
-        self.speed(0)
-        self.gold = 0
-    
-    # Method to move player if not a wall
-    def go_not_walls(self, x, y):
-        if (x, y) not in walls:
-            self.goto(x, y)
+# Create a turtle object for drawing
+t = turtle.Turtle()
+t.hideturtle()
 
-    # Create movement for player
-    def go_up(self):
-        new_y = self.ycor() + 24
-        self.go_not_walls(self.xcor(), new_y)
-    
-    def go_down(self):
-        new_y = self.ycor() - 24
-        self.go_not_walls(self.xcor(), new_y)
-    def go_left(self):
-        new_x = self.xcor() - 24
-        self.go_not_walls(new_x, self.ycor())
-    
-    def go_right(self):
-        new_x = self.xcor() + 24
-        self.go_not_walls(new_x, self.ycor())
+# Function to display the title welcome screen
+def show_title_screen():
+    winsound.PlaySound('game_open.wav', winsound.SND_ASYNC)
 
-    def is_collision(self, other):
-        a = self.xcor() - other.xcor()
-        b = self.ycor() - other.ycor()
-        distance = math.sqrt((a ** 2) + (b ** 2))
-        if distance < 5:
-            return True
-        else: 
-            return False
+    t.penup()
+    t.goto(0, 250)
+    t.color("white")
+    t.write("Maze-O-Cat", align="center", font=("Arial", 30, "bold"))
+    t.goto(0, 175)
+    t.write("Welcome to the Game!", align="center", font=("Arial", 20, "bold"))
+    t.goto(0, 100)
+    t.write("Come help Kitty, to reach her cookies...", align="center", font=("Arial", 16, "bold"))
+    t.goto(0, 50)
+    t.write("without getting caught!!", align="center", font=("Arial", 16, "bold"))
+    t.goto(0, 0)
+    t.write("Can you help Kitty?", align="center", font=("Arial", 16))
 
-# Create Treasure
-class Treasure(turtle.Turtle):
-    def __init__(self, x, y):
-        turtle.Turtle.__init__(self)
-        self.shape("cookie.gif")
-        self.color("gold")
-        self.penup()
-        self.speed(0)  
-        self.gold = 100 
-        self.goto(x, y)
+    draw_button("Play game", -200, -150)
 
-    def destroy(self):
-        self.goto(2000, 2000)
-        self.hideturtle()
+    kitty.penup()
+    kitty.goto(100, -200)
+    kitty.shape('cat2.gif')
+    screen.update()
 
-# Class Door
-class Door(turtle.Turtle):
-    def __init__(self, x, y):
-        turtle.Turtle.__init__(self)
-        self.shape("door.gif")
-        self.color("green")
-        self.penup()
-        self.speed(0)
-        self.goto(x,y)    
+    # Wait for a click on the button to move to level selection
+    screen.onscreenclick(show_levels_screen)
 
-    def destroy(self):
-        self.goto(2000, 2000)
-        self.hideturtle()    
+# Function to draw any button
+def draw_button(label, x, y):
+    t.goto(x, y)
+    t.pendown()
+    t.begin_fill()
+    t.color("white")
+    for _ in range(2):
+        t.forward(100)
+        t.right(90)
+        t.forward(40)
+        t.right(90)
+    t.end_fill()
+    t.penup()
+    t.color("black")
+    t.goto(x + 50, y - 30)
+    t.write(label, align="center", font=("Arial", 16, "normal"))
 
-# Create Enemy
-class Enemy(turtle.Turtle):
-    def __init__(self, x, y, player, treasures):
-        turtle.Turtle.__init__(self)
-        self.shape("enemy.gif")
-        self.color("red")
-        self.penup()
-        self.speed(0)
-        self.goto(x, y)
-        self.player = player
-        self.treasures = treasures
-        self.direction = random.choice(["up", "down", "left", "right"])
+# Function to clear the screen
+def clear_screen():
+    t.clear()
+    for obj in [kitty, grass, cat, cookie]:
+        obj.hideturtle()
 
-    def move(self):
-        # Default movement direction (up, down, left, right)
-        if self.direction == "up":
-            dx = 0
-            dy = 24
-        elif self.direction == "down":
-            dx = 0
-            dy = -24
-        elif self.direction == "left":
-            dx = -24
-            dy = 0
-        elif self.direction == "right":
-            dx = 24
-            dy = 0
+# Function to show the level selection screen
+def show_levels_screen(x, y):
+    winsound.PlaySound('game_levels.wav', winsound.SND_ASYNC)
+    clear_screen()
 
-        # If close to the player, chase the player
-        def some():
-            if self.is_close(self.player):
-                if self.player.xcor() < self.xcor():
-                    self.direction = "left"
-                elif self.player.xcor() > self.xcor():
-                    self.direction = "right"
-                elif self.player.ycor() < self.ycor():
-                    self.direction = "down"
-                else:
-                    self.direction = "up"
-            # If there are treasures, move towards the nearest one
-            elif self.treasures:  
-                nearest_treasure = min(self.treasures, key=lambda treasure: self.distance(treasure))
-                if nearest_treasure.xcor() < self.xcor():
-                    self.direction = "left"
-                elif nearest_treasure.xcor() > self.xcor():
-                    self.direction = "right"
-                elif nearest_treasure.ycor() < self.ycor():
-                    self.direction = "down"
-                else:
-                    self.direction = "up"
-        some()
-        # Move to the next position in the chosen direction
-        move_to_x = self.xcor() + dx
-        move_to_y = self.ycor() + dy
+    # Adding grass
+    grass.penup()
+    grass.goto(0, -100)
+    grass.shape('grass.gif')
+    grass.showturtle()
 
-        # Avoid walls (this assumes that walls are defined somewhere)
-        if not self.is_collision_with_walls(move_to_x, move_to_y):
-            self.goto(move_to_x, move_to_y)
+    # Adding cat
+    cat.penup()
+    cat.goto(200, -200)
+    cat.shape('cat.gif')
+    cat.showturtle()
+
+    # Adding cookie
+    cookie.penup()
+    cookie.goto(100, -100)
+    cookie.shape('cookie.gif')
+    cookie.showturtle()
+
+    # Adding effect
+    t.goto(0, 200)
+    t.color("lightblue")
+    t.write("Choose the level:", align="center", font=("Arial", 30, "bold"))
+
+    draw_button("Easy", -200, 100)
+    draw_button("Medium", -200, 30)
+    draw_button("Cooper", -200, -40)
+
+    # Wait for a click to start the game based on level selection
+    screen.onscreenclick(start_game)
+
+# Function to start the game based on level
+def start_game(x, y):
+    clear_screen()
+    winsound.PlaySound('button_press.wav', winsound.SND_ASYNC)
+    time.sleep(0.5)
+    winsound.PlaySound('loading.wav', winsound.SND_ASYNC)
+    if -200 <= x <= -100 and 80 <= y <= 120:  # Easy level
+        run_level("game_easy")
+    elif -200 <= x <= -100 and 10 <= y <= 50:  # Medium level
+        run_level("game_med")
+    elif -200 <= x <= -100 and -60 <= y <= -20:  # Hard level
+        run_level("game_hard")
+    else:
+        pass
+
+
+# Function to dynamically load and start the maze game based on the level
+def run_level(level_name):
+    try:
+        level_module = importlib.import_module(level_name)
+        if hasattr(level_module, "main"):
+            level_module.main()
         else:
-            some()
-            self.direction = random.choice(["up", "down", "left", "right"])
-        
-        # Continue moving after a short delay
-        turtle.ontimer(self.move, t=150)
+            print(f"Error: {level_name} does not have a `main` function.")
+    except ModuleNotFoundError:
+        print(f"Error: {level_name}.py file not found.")
+    except Exception as e:
+        print(f"Error running {level_name}: {e}")
 
-    def is_close(self, other):
-        # Calculate distance between the enemy and the player
-        a = self.xcor() - other.xcor()
-        b = self.ycor() - other.ycor()
-        distance = math.sqrt(a**2 + b**2)
-        return distance < 1000 # Consider proximity within 24 pixels
-
-    def is_collision_with_walls(self, x, y):
-        # Check if the next position collides with a wall
-        for wall in walls:  # Assumes `walls` is a global list of wall coordinates
-            if (x, y) == wall:
-                return True
-        return False
-        
-
-# Create class instances
-pen = Pen()
-player = Player()
-# lighting = Lighting()
-
-
-
-# generate maze
-def generate_random_maze(rows, cols):
-    # Initial maze with all walls
-    maze = [['X' for i in range(cols)] for i in range(rows)]
-
-    # Backtracking to create path
-    def carve_walls(x, y):
-        direction = [(0, -2), (2, 0), (0, 2), (-2, 0)]
-        random.shuffle(direction)
-
-        for dx, dy in direction:
-            nx = x + dx
-            ny = y + dy
-            if 1 <= nx < rows and 1 <= ny < cols and maze[ny][nx] == 'X':
-                maze[y + dy//2][x + dx//2] = ' '
-                maze[ny][nx] = ' '
-                carve_walls(nx, ny)
-
-    # Start carving from a random point
-    start_x = random.randrange(1, cols, 2)
-    start_y = random.randrange(1, rows, 2)
-    maze[start_y][start_x] = " " 
-    carve_walls(start_x, start_y)
-
-    # Add player at the start position
-    maze[start_y][start_x] = "P"
-
-    # Perform BFS to find the furthest point
-    def bfs_furthest_point(start_x, start_y):
-
-        # Initialize
-        visited = set()
-        furthest = (start_x, start_y, 0)  
-        
-        def dfs(x, y, dist):
-            nonlocal furthest
-            # Mark visited node
-            visited.add((x,y))
-
-            # Update the furthest point 
-            if dist > furthest[2]:
-                furthest = (x, y, dist)
-
-            for dx, dy in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
-                nx = dx + x
-                ny = dy + y
-                if 1 <= nx < rows and 1 <= ny < cols and maze[ny][nx] == ' ' and (nx,ny) not in visited:
-                    dfs(nx,ny, dist + 1)
-
-        dfs(start_x, start_y, 0)
-
-        return furthest 
-
-    # Get furthest point and place the door
-    fx, fy, _ = bfs_furthest_point(start_x, start_y)
-    maze[fy][fx] = "D" 
-
-    # Add random treasures
-    for i in range(random.randint(1, 5)):
-        tx, ty = random.randrange(1, cols, 2), random.randrange(1, rows, 2)
-        if maze[ty][tx] == " ":
-            maze[ty][tx] = "T"
-
-    # Add random enemies
-    for i in range(2):
-        ex, ey = random.randrange(1, cols, 2), random.randrange(1, rows, 2)
-        if maze[ey][ex] == " ":
-            maze[ey][ex] = "E"
-
-    return maze
-
-# Create levels list
-levels = []
-
-
-level_2 = generate_random_maze(25,25)
-
-# Create wall barrier list
-walls = []
-
-# Add treasure list
-treasures = []
-
-# Add door list
-doors = []
-
-# Add enemies list
-enemies = []
-
-# Add maze to mazes list
-levels.append(level_2)
-
-
-# pen_stamps = []
-# Set up the maze
-def setup_maze(level):
-    for y in range(len(level)):
-        for x in range (len(level[y])):
-            character = level[y][x]
-
-            # calculate the screen x, y coordinates     
-            screen_x = -288 + (x * 24)
-            screen_y = 288 - (y * 24)
-
-            # Check if it is a 'X' (representing the wall)
-            if character == "X":
-                pen.goto(screen_x, screen_y)
-                pen.stamp()
-                # stamp_id = pen.stamp()
-                # pen_stamps.append((stamp_id, screen_x, screen_y))
-
-                # Add barriers to wall list
-                walls.append((screen_x,screen_y))
-            
-            # Check if it is a 'P' (representing player)
-            if character == 'P':
-                player.goto(screen_x, screen_y)
-            
-            # Check if it is a 'T' (representing treasure)
-            if character == 'T': 
-                treasures.append(Treasure(screen_x,screen_y))
-
-            # Check if it is a 'D' (representing Door)
-            if character == 'D':
-                doors.append(Door(screen_x, screen_y))
-
-            # Check if it is a 'E' (representing enemies)
-            if character == 'E':
-                enemy = Enemy(screen_x, screen_y,player, treasures)
-                enemies.append(enemy)
-                # Start moving the enemy
-                enemy.move()
-
- 
-# Keyboard binding
-turtle.listen()
-turtle.onkey(player.go_left, "Left")
-turtle.onkey(player.go_right, "Right")
-turtle.onkey(player.go_up, "Up")
-turtle.onkey(player.go_down, "Down")
-
-# Call the setup maze funtion
-setup_maze(levels[0])
-
-# Turn off screen updates
-wn.tracer(0)
-
-
-
-# Add a global timer variable
-start_time = time.time()
-time_limit = 90 # game durations in sec
-
-timer_pen = Pen()  # Create a new Pen for the timer
-timer_pen.penup()
-timer_pen.hideturtle()
-timer_pen.color("white")
-
-def showtime():
-    remain_time = max(0, time_limit - int(time.time() - start_time))
-    timer_pen.goto(-300, 320)
-    timer_pen.clear() # clear previous timer
-    timer_pen.write(f"Time left: {remain_time}s", align="left", font=("Arial", 14, "bold"))
-    return remain_time
-
-# Add HUD elements
-hud_pen = Pen()
-hud_pen.penup()
-hud_pen.hideturtle()
-hud_pen.color("white")
-
-def show_hud():
-    hud_pen.goto(-300, 300)
-    hud_pen.clear()
-    hud_pen.write(f"Gold: {player.gold} | Cookies Left: {len(treasures)}", align="left", font=("Arial", 14, "bold"))
-
-# After gameplay
-def game_over():
-    winsound.PlaySound("game_lose.wav", winsound.SND_ASYNC)
-    # Display Game Over message and stop the game.
-    pen.goto(0, 0)
-    pen.color("red")
-    pen.write("GAME OVER", align="center", font=("Arial", 36, "bold"))
-    wn.update()
-    time.sleep(3)
-    turtle.bye()
-
-def won():
-    # Display 'Winner' message and stop the game.
-    winsound.PlaySound("game_win.wav", winsound.SND_ASYNC)
-    pen.goto(0, 0)
-    pen.color("green")
-    pen.write("YOU WON", align="center", font=("Arial", 36, "bold"))
-    wn.update()
-    time.sleep(2)
-    turtle.bye()
-
-
-# Main game
-try:
-    while True:
-        winsound.PlaySound("game_on.wav", winsound.SND_ASYNC)
-        # Check for player collision with treasure
-        # update_lighting()
-        # Display timer
-        remain_time = showtime()
-        if remain_time <= 0:
-            game_over()
-
-        # Display HUD
-        show_hud()
-        # if time.time() - start_time > 60:
-        #     enemy_speed = 2
-
-        for treasure in treasures:
-            if player.is_collision(treasure):
-                # Add treasure gold to the player
-                winsound.PlaySound("get_gold.wav", winsound.SND_ASYNC)
-                time.sleep(0.03)
-                winsound.PlaySound("game_on.wav", winsound.SND_ASYNC)
-                player.gold += treasure.gold
-                print(f"Player gold: {player.gold}")
-                # Destroy the treasure
-                treasure.destroy()
-                # Remove the treasure from the treasure list
-                treasures.remove(treasure)
-        
-        for door in doors:
-            if player.is_collision(door) and not treasures:
-                doors.remove(door)
-
-        # Check if all treasures are collected
-        if not treasures and not doors:
-            won()
-
-        # Iterate through enemy list to see if the player collide
-        for enemy in enemies:
-            if player.is_collision(enemy):
-                print("You're dead!")
-                game_over()
-
-        # Update screen and add delay
-        wn.update()
-        # time.sleep(0.05)
-
-except turtle.Terminator:
-    print("Game exited!")
+# Show the title screen
+show_title_screen()
+screen.mainloop()
