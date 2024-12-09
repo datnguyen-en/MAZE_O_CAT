@@ -3,6 +3,7 @@ import math
 import random
 import time
 import pygame
+import winsound
 
 # Add music for the game
 pygame.mixer.init()
@@ -11,7 +12,7 @@ pygame.mixer.music.set_volume(0.5)
 pygame.mixer.music.play(-1)
 
 # Load sound effect
-pickaxe_hit_sound = pygame.mixer.Sound("background.mp3")
+pickaxe_hit_sound = pygame.mixer.Sound("pickup_sound.mp3")
 pickaxe_hit_sound.set_volume(0.5)   
 
 # Create the UI for the game
@@ -22,9 +23,14 @@ wn.setup(700, 700)
 wn.tracer(0)
 
 # Register shapes
-images = ['wall2.gif', 'cookie.gif', 'enemy.gif', 'char.gif', 'door.gif', 'pickaxe.gif']
+images = ['wall2.gif', 'cookie.gif', 'enemy.gif', 'char.gif', 'door.gif', 'pickaxe.gif', 'teleport.gif']
 for image in images:
     wn.addshape(image)
+
+
+def convert_to_list_of_lists(level):
+    return [list(row) for row in level]
+
 # Create Pen
 class Pen(turtle.Turtle):
     def __init__(self):
@@ -42,7 +48,7 @@ class Player(turtle.Turtle):
         self.color("blue")
         self.penup()
         self.speed(0)
-        self.gold = 0
+        self.pickaxe = 0
         self.has_pickaxe = False
        
     # Method to move player if not a wall
@@ -75,24 +81,54 @@ class Player(turtle.Turtle):
         else: 
             return False
         
-    # Mine wall if the player got package    
     def mine_wall(self, x, y):
-        if self.has_pickaxe and (x, y) in walls:
-            walls.remove((x, y))
-            stamp_id = wall_stamps.pop((x,y), None)
-            if stamp_id is not None:
-                pen.clearstamp(stamp_id)
+        if self.has_pickaxe and self.pickaxe > 0:
+            # Convert screen coordinates to maze grid coordinates
+            grid_x = (x + 288) // 24
+            grid_y = (288 - y) // 24
+
+            # Ensure the wall is not part of the outer border
+            if grid_x == 0 or grid_y == 0 or grid_x == len(level_hard[0]) - 1 or grid_y == len(level_hard) - 1:
+                display_message("Cannot mine the border!", 2000)
+                return
+            
+            if (x, y) in walls:
+                self.pickaxe -= 1
+                walls.remove((x, y))
+                stamp_id = wall_stamps.pop((x, y), None)
+                if stamp_id is not None:
+                    pen.clearstamp(stamp_id)
+
+                if self.pickaxe == 0:
+                    self.has_pickaxe = False
+                    display_message("No pickaxes left!", 2000)
+                    
+    def teleport(self, rows, cols, maze):
+        while True:
+            tx, ty = random.randrange(1, rows, 2), random.randrange(1, cols, 2)
+            
+            # Check if the location in the maze is open space
+            if maze[ty][tx] == ' ':
+                # Update the player's position in the maze
+                for y in range(len(maze)):
+                    for x in range(len(maze[y])):
+                        if maze[y][x] == 'P':  # Clear the current position
+                            maze[y][x] = ' '
+                
+                maze[ty][tx] = 'P'  # Set new player position
+                self.goto(-288 + (tx * 24), 288 - (ty * 24))
+                print(f"Teleported to: ({tx}, {ty})")
+                break
 
 
-# Create Treasure
-class Treasure(turtle.Turtle):
+
+# Create Teleportation
+class Teleportation(turtle.Turtle):
     def __init__(self, x, y):
         turtle.Turtle.__init__(self)
-        self.shape("cookie.gif")
-        self.color("gold")
+        self.shape("teleport.gif")
         self.penup()
-        self.speed(0)  
-        self.gold = 100 
+        self.speed(0)
         self.goto(x, y)
 
     def destroy(self):
@@ -107,26 +143,14 @@ class Pickaxe(turtle.Turtle):
         self.color("green")
         self.penup()
         self.speed(0)
+        self.have = 2
         self.goto(x, y)
     
     def destroy(self):
         self.goto(2000, 2000)
         self.hideturtle()
 
-        
-# Class Door
-class Door(turtle.Turtle):
-    def __init__(self, x, y):
-        turtle.Turtle.__init__(self)
-        self.shape("door.gif")
-        self.color("green")
-        self.penup()
-        self.speed(0)
-        self.goto(x,y)    
-
-    def destroy(self):
-        self.goto(2000, 2000)
-        self.hideturtle()    
+          
 
 
 # Add the heuristic and A* pathfinding functions
@@ -235,80 +259,6 @@ class Enemy(turtle.Turtle):
 # Create class instances
 pen = Pen()
 player = Player()
-# lighting = Lighting()
-
-
-
-# generate maze
-def generate_random_maze(rows, cols):
-    # Initial maze with all walls
-    maze = [['X' for i in range(cols)] for i in range(rows)]
-
-    # Backtracking to create path
-    def carve_walls(x, y):
-        direction = [(0, -2), (2, 0), (0, 2), (-2, 0)]
-        random.shuffle(direction)
-
-        for dx, dy in direction:
-            nx = x + dx
-            ny = y + dy
-            if 1 <= nx < rows and 1 <= ny < cols and maze[ny][nx] == 'X':
-                maze[y + dy//2][x + dx//2] = ' '
-                maze[ny][nx] = ' '
-                carve_walls(nx, ny)
-
-    # Start carving from a random point
-    start_x = random.randrange(1, cols, 2)
-    start_y = random.randrange(1, rows, 2)
-    maze[start_y][start_x] = " " 
-    carve_walls(start_x, start_y)
-
-    # Add player at the start position
-    maze[start_y][start_x] = "P"
-
-    # Perform BFS to find the furthest point
-    def bfs_furthest_point(start_x, start_y):
-
-        # Initialize
-        visited = set()
-        furthest = (start_x, start_y, 0)  
-        
-        def dfs(x, y, dist):
-            nonlocal furthest
-            # Mark visited node
-            visited.add((x,y))
-
-            # Update the furthest point 
-            if dist > furthest[2]:
-                furthest = (x, y, dist)
-
-            for dx, dy in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
-                nx = dx + x
-                ny = dy + y
-                if 1 <= nx < rows and 1 <= ny < cols and maze[ny][nx] == ' ' and (nx,ny) not in visited:
-                    dfs(nx,ny, dist + 1)
-
-        dfs(start_x, start_y, 0)
-
-        return furthest 
-
-    # Get furthest point and place the door
-    fx, fy, _ = bfs_furthest_point(start_x, start_y)
-    maze[fy][fx] = "D" 
-
-    # Add random treasures
-    # for i in range(random.randint(1, 5)):
-    #     tx, ty = random.randrange(1, cols, 2), random.randrange(1, rows, 2)
-    #     if maze[ty][tx] == " ":
-    #         maze[ty][tx] = "T"
-
-    # Add random enemies
-    for i in range(4):
-        ex, ey = random.randrange(1, cols, 2), random.randrange(1, rows, 2)
-        if maze[ey][ex] == " ":
-            maze[ey][ex] = "E"
-
-    return maze
 
 # Create levels list
 levels = []
@@ -335,19 +285,21 @@ level_hard = [
     "X XXXXXXXXX XXXXXXXXXXXXXXXXXXXXXXXXXXXX",
     "X                                      X",
     "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+    "X     X K X X                         DX",
+    "X XXXXXXXXX XXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+    "X       T                              X",
+    "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 ]
+# Convert level_hard into a mutable format
+level_hard = convert_to_list_of_lists(level_hard)
 
 # Create wall barrier list
 walls = []
 
-# Add treasures list
-treasures = []
-
 # Add pickaxes list
 pickaxes = []
 
-# Add door list
-doors = []
+teleports = []
 
 # Add enemies list
 enemies = []
@@ -380,13 +332,6 @@ def setup_maze(level):
             if character == 'P':
                 player.goto(screen_x, screen_y)
             
-            # Check if it is a 'T' (representing treasure)
-            # if character == 'T': 
-            #     treasures.append(Treasure(screen_x,screen_y))
-
-            # Check if it is a 'D' (representing Door)
-            if character == 'D':
-                doors.append(Door(screen_x, screen_y))
 
             # Check if it is a 'E' (representing enemies)
             if character == 'E':
@@ -398,10 +343,10 @@ def setup_maze(level):
             if character == 'K':
                 pickaxes.append(Pickaxe(screen_x, screen_y))
 
+            if character == 'T':
+                teleports.append(Teleportation(screen_x, screen_y))
 
-# Update Lighting
-# def update_lighting():
-#     lighting.draw_light(player.position(), 200)
+
  
 # Keyboard binding
 turtle.listen()
@@ -412,13 +357,17 @@ turtle.onkey(player.go_down, "Down")
 
 
 def mine():
-    x, y = player.xcor(), player.ycor()
-    for dx, dy in [(-24, 0), (24, 0), (0, -24), (0, 24)]:
-        wall_x, wall_y = x + dx, y + dy
-        if (wall_x, wall_y) in walls:
-            player.mine_wall(wall_x, wall_y)
-            pickaxe_hit_sound.play()
-            break
+    if player.pickaxe > 0:
+        x, y = player.xcor(), player.ycor()
+        for dx, dy in [(-24, 0), (24, 0), (0, -24), (0, 24)]:
+            wall_x, wall_y = x + dx, y + dy
+            if (wall_x, wall_y) in walls:
+                player.mine_wall(wall_x, wall_y)
+                pickaxe_hit_sound.play()
+                break
+    
+    else: 
+        display_message("No pickaxes available!", 2000)
 
 # Press "space" to mine walls
 turtle.onkey(mine, "space")
@@ -443,7 +392,6 @@ def display_message(text, duration=2000):
     
     # Clear the message after the specified duration
     turtle.ontimer(message_pen.clear, duration)
-
 
 
 # Add a global timer variable
@@ -471,11 +419,12 @@ hud_pen.color("white")
 def show_hud():
     hud_pen.goto(-300, 300)
     hud_pen.clear()
-    hud_pen.write(f"Cookies Left: {len(treasures)}", align="left", font=("Arial", 14, "bold"))
+    hud_pen.write(f"RUN AWAYY!! | Pickaxes left: {player.pickaxe}", align="left", font=("Arial", 14, "bold"))
 
 # After gameplay
 def game_over():
     # Display Game Over message and stop the game.
+    winsound.PlaySound("game_lose.wav", winsound.SND_ASYNC)
     pen.goto(0, 0)
     pen.color("red")
     pen.write("GAME OVER", align="center", font=("Arial", 36, "bold"))
@@ -485,6 +434,7 @@ def game_over():
 
 def won():
     # Display 'Winner' message and stop the game.
+    winsound.PlaySound("game_win.wav", winsound.SND_ASYNC)
     pen.goto(0, 0)
     pen.color("green")
     pen.write("YOU WON", align="center", font=("Arial", 36, "bold"))
@@ -501,7 +451,7 @@ try:
         # Display timer
         remain_time = showtime()
         if remain_time <= 0:
-            game_over()
+            won()
 
         # Display HUD
         show_hud()
@@ -509,15 +459,20 @@ try:
         for pickaxe in pickaxes:
             if player.is_collision(pickaxe):
                 print("You found a pickaxe!")
+                player.pickaxe += pickaxe.have
                 player.has_pickaxe = True
+                winsound.PlaySound("get_gold.wav", winsound.SND_ASYNC)
                 pickaxe.destroy()
                 pickaxes.remove(pickaxe)
-                display_message("Wow, you received a pickaxe!", 3000)
+                display_message("Wow, a pickaxe! | Press 'Space' to use", 2000)
 
         
-        for door in doors:
-            if player.is_collision(door):
-                won()
+        for teleport in teleports:
+            if player.is_collision(teleport):
+                winsound.PlaySound("tele.wav", winsound.SND_ASYNC)
+                player.teleport(25, 25, level_hard)
+                teleport.destroy()
+                teleports.remove(teleport)
 
         # Iterate through enemy list to see if the player collide
         for enemy in enemies:
