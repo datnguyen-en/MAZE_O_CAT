@@ -1,4 +1,4 @@
-##🐱 Maze_O_CAT
+# 🐱 Maze_O_CAT
 
 A fun and challenging maze game where you guide a cat through puzzles, collect cookies, and outsmart enemies!
 
