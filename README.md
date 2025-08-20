@@ -1,8 +1,75 @@
-# FINAL_PROJECT_CS110
-Experience our maze, a game which will challenge your intelligence. Undergo this immersive experience as you are surrounded by engaging visuals and audios, where the goal is to help the cat grab all cookies and solve the maze, while the enemies chase her. You will have the ability to choose the level you want to play, and you determination will tell how far you go in the game. 
-For making this game, engaging and interesting, we modified our three levels in the following way:
-1) Easy level- Simply get a taste of what the maze will be like, where you are not surrounded by enemies. You need to grab all the cookies in time and reach the door to win.
-2) Medium level- This level introduces enemies, which are spread through out the randomly generated maze, who are programmed to get closer to the player and the door. So remember- faster finger first!
-3) Hard level- We have used A* through which the enemies know exactlty where you are. However, if you get to the pickaxes first, you can win the game!
+🐱 Maze_O_CAT
 
-So, what are you waiting for? 
+A fun and challenging maze game where you guide a cat through puzzles, collect cookies, and outsmart enemies!
+
+🎮 Game Overview
+
+Maze_O_CAT is designed to test your intelligence, reflexes, and determination. You’ll explore immersive mazes filled with cookies to collect, enemies to avoid, and doors to unlock. Each level comes with unique challenges, engaging visuals, and exciting audio effects.
+
+Your mission:
+➡️ Help the cat grab all the cookies.
+➡️ Outsmart or outrun enemies.
+➡️ Find the door and escape!
+
+🧩 Game Levels
+
+We created three progressively difficult levels to keep the gameplay engaging:
+
+Easy 🟢
+
+Get a feel for the maze mechanics.
+
+No enemies, just cookies and the exit door.
+
+Perfect for beginners.
+
+Medium 🟡
+
+Enemies are introduced and scattered across a randomly generated maze.
+
+Enemies move closer to you and the exit door.
+
+Reflexes are key: faster fingers win!
+
+Hard 🔴
+
+Enemies use the A* algorithm to track your exact position.
+
+Your best chance? Grab the pickaxes before they catch you!
+
+A true test of strategy and speed.
+
+🛠️ Features
+
+Randomly generated mazes for replayability.
+
+Enemy AI that adapts to difficulty levels.
+
+Immersive visuals and sound effects.
+
+Multiple strategies to win (speed, smart movement, or item collection).
+
+🚀 How to Play
+
+Choose your difficulty level.
+
+Use your keyboard to navigate the maze.
+
+Collect all cookies to unlock the exit.
+
+Avoid enemies or fight back with pickaxes.
+
+Reach the door to win!
+
+📚 Technologies Used
+
+Python
+
+Pygame (for visuals, audio, and game mechanics)
+
+A* Pathfinding Algorithm (for enemy AI)
+
+🎉 Why Play?
+
+If you love a mix of puzzle-solving, fast reflexes, and AI-driven challenges, Maze_O_CAT is for you.
+So, what are you waiting for? Help the cat escape! 🐾
